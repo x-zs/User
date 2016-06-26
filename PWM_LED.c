@@ -18,9 +18,10 @@ TIM_OCInitStructure.TIM_OCMode=TIM_OCMode_PWM1;
 	TIM_Cmd(TIM3,ENABLE);
 }
 void PWM_GPIO_Config()
-{RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3,ENABLE);
+{ GPIO_InitTypeDef GPIO_InitStructure;
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3,ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB,ENABLE);
- GPIO_InitTypeDef GPIO_InitStructure;
+
 	GPIO_InitStructure.GPIO_Mode=GPIO_Mode_AF_PP;
 	GPIO_InitStructure.GPIO_Pin=GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Speed=GPIO_Speed_50MHz;
