@@ -8,7 +8,7 @@ TIM_TimBaseStructure.TIM_Prescaler=72;
 TIM_TimBaseStructure.TIM_ClockDivision=TIM_CKD_DIV1;
 TIM_TimBaseStructure.TIM_CounterMode=TIM_CounterMode_Up;
 	TIM_TimeBaseInit(TIM3,&TIM_TimBaseStructure);
-TIM_OCInitStructure.TIM_OCMode=TIM_OCMode_PWM1;
+   TIM_OCInitStructure.TIM_OCMode=TIM_OCMode_PWM1;
 	TIM_OCInitStructure.TIM_OutputState=TIM_OutputState_Enable;
 	TIM_OCInitStructure.TIM_Pulse=50;
 	TIM_OCInitStructure.TIM_OCPolarity=TIM_OCPolarity_High;
@@ -29,6 +29,6 @@ void PWM_GPIO_Config()
 }
 void TIM3_PWM_Config()
 {
-	PWM_GPIO_Config();
+	PWM_GPIO_Config();//gaigai
 	TIM3_Config();
 }
