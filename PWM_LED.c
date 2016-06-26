@@ -18,7 +18,7 @@ TIM_OCInitStructure.TIM_OCMode=TIM_OCMode_PWM1;
 	TIM_Cmd(TIM3,ENABLE);
 }
 void PWM_GPIO_Config()
-{ GPIO_InitTypeDef GPIO_InitStructure;
+{ GPIO_InitTypeDef GPIO_InitStructure;//函数声明要放在程序的前面
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3,ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB,ENABLE);
 
