@@ -17,8 +17,10 @@ uint8_t Filck_LED=0;
 int16_t Delay_3s=1;
 uint8_t help_switch=1;
 int16_t Delay_500ms=0;
+int16_t Shake_Delay=0;
 uint8_t Call_Switch=0;
 _Bool Get_through=0;  ///当接听电话时屏蔽其他功能的口令
+_Bool Shake_Switch=0;
 	#define DATE_A 20    //数组二维数值
 	#define DATE_B 17		//数组一维数值
 	//添加关键词，用户修改
@@ -42,6 +44,15 @@ void LD3320_main(void)
 	{if(Filck_LED==1&&Delay_500ms<=0)///是否开启危险报警灯
 		 {Delay_500ms=125;//以0.125s的间隔闪烁
 		  GPIO_WriteBit(LED3_GPIO_PORT,LED3_PIN,(BitAction)((1-GPIO_ReadOutputDataBit(LED3_GPIO_PORT,LED3_PIN))));
+		 }
+		 if((Shake_Switch==1)&&(Get_through==0)&&(Shake_Delay<=0))
+		 {
+		  Shake_Delay=1000;
+		  GPIO_WriteBit(GPIOA,GPIO_Pin_10,(BitAction)(1-GPIO_ReadOutputDataBit(GPIOA,GPIO_Pin_10)));
+		 }
+		 else if(Get_through==1||Shake_Switch==0)
+		 {
+		  GPIO_ResetBits(GPIOA,GPIO_Pin_10);
 		 }
 		switch(nAsrStatus)
 		{
@@ -136,7 +147,8 @@ static void Board_text(uint8 Code_Val)
 			{Flicker_LED();
 		   printf("AT+CG\r\n");	
        Call_Switch=0;	
-       Get_through=0;				
+       Get_through=0;
+			Shake_Switch=0;				
 			}
 			nAsrRes=0;
 		}
@@ -359,9 +371,12 @@ static void LED_GPIO_cfg(void)
 		GPIO_Init(LED2_GPIO_PORT, &GPIO_InitStructure);
 		GPIO_InitStructure.GPIO_Pin = LED3_PIN;
 		GPIO_Init(LED3_GPIO_PORT, &GPIO_InitStructure);
+    GPIO_InitStructure.GPIO_Pin=GPIO_Pin_10;//初始化震动端口A10
+    GPIO_Init(GPIOA,&GPIO_InitStructure);
 		LED1_OFF();
 		LED2_OFF();
     LED3_OFF();
+    GPIO_ResetBits(GPIOA,GPIO_Pin_10);//
 }
 ///相关初始化 end 
 

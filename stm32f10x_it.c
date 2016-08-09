@@ -138,10 +138,12 @@ void PendSV_Handler(void)
 extern uint16_t Delay_Ms;
 extern int16_t Delay_3s;
 extern int16_t Delay_500ms;
+extern int16_t Shake_Delay;
 void SysTick_Handler(void)
 {Delay_Ms--;
 if(Delay_3s>=-1)Delay_3s--;
 if(Delay_500ms>=-1)Delay_500ms--;
+if(Shake_Delay>=-1)Shake_Delay--;
 }
 
 /******************************************************************************/
@@ -170,6 +172,7 @@ extern	uint8_t  sRecog[DATE_A][DATE_B];
 extern uint8_t help_switch;
 extern uint8_t Call_Switch;
 extern _Bool Get_through;
+extern _Bool Shake_Switch;
 uint8_t Ch_Sw=0;
 void USART2_IRQHandler(void)
 { 
@@ -183,12 +186,17 @@ void USART2_IRQHandler(void)
 		 }
 		 if(ch=='\n')
 		 {if((Rx_Buff[0]=='I'||Rx_Buff[0]=='P')&&Rx_Buff[1]=='R')///目前无法判断对方打过来电话后挂断了电话，或者打了电话对方没有接听 总之为对方挂断电话的情况。
-			 {
+			 { 
 			   Call_Switch=1;
+			 }
+			 if(Rx_Buff[0]=='I'&&Rx_Buff[1]=='R')//如果对方打电话过来,开启震动
+			 {
+			   Shake_Switch=1;
 			 }
 			 if(Call_Switch==1&&strstr(Rx_Buff,"APR+call_end\r"))
 			 {Call_Switch=0;
 			  Get_through=0;
+				Shake_Switch=0;
 			 }//如果对方主动挂断电话.程序主动发送一个call_end 
 			 if(strstr(Rx_Buff,"II\r"))
 			 {for(i=5000;i>0;i--);
@@ -243,4 +251,4 @@ void USART2_IRQHandler(void)
   */ 
 
 
-/******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
+/******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILe****/
