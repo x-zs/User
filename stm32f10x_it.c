@@ -26,7 +26,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
 #include <stdio.h>
-
+#include "PWM_LED.h"
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
   */
@@ -202,16 +202,13 @@ void USART2_IRQHandler(void)
 			 {for(i=5000;i>0;i--);
 			   printf("APT+SPP8888\r\n");
 			 }
-			 if(strstr(Rx_Buff,"APR+help_off\r"))
-			 {help_switch=0;			  
-			 }
-			 if(strstr(Rx_Buff,"APR+help_on\r"))
-			 {help_switch=1;			  
-			 }
-    
-       if(strstr(Rx_Buff,"APR+Change_Finish\r"))
-			 {Ch_Sw=0;
-			 }		 
+			 if(strstr(Rx_Buff,"APR+help_off\r"))help_switch=0;		//关求救功能	  			 
+			 else if(strstr(Rx_Buff,"APR+help_on\r"))help_switch=1;	//开求救功能		  
+			 else if(strstr(Rx_Buff,"APR+LED_OFF\r"))TIM3_Config(0);//关
+			 else if(strstr(Rx_Buff,"APR+LED_H\r"))TIM3_Config(20);//led亮度高
+			 else if(strstr(Rx_Buff,"APR+LED_M\r"))TIM3_Config(8);//中
+			 else if(strstr(Rx_Buff,"APR+LED_L\r"))TIM3_Config(2);//低
+       else if(strstr(Rx_Buff,"APR+Change_Finish\r"))Ch_Sw=0;//改变口令完成标志		 		 
        if(Ch_Sw==1&&Rx_Buff[0]=='A')
 			 {  
 			  for(i=0;i<17;i++)//清空上一次的命令

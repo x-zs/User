@@ -21,6 +21,7 @@ int16_t Shake_Delay=0;
 uint8_t Call_Switch=0;
 _Bool Get_through=0;  ///当接听电话时屏蔽其他功能的口令
 _Bool Shake_Switch=0;
+_Bool Flick_Switch=0;
 	#define DATE_A 20    //数组二维数值
 	#define DATE_B 17		//数组一维数值
 	//添加关键词，用户修改
@@ -37,13 +38,14 @@ _Bool Shake_Switch=0;
 void LD3320_main(void)
 {
 	LD3320_init();
-  TIM3_PWM_Config();	
+  TIM3_PWM_Config(0);	
 	nAsrStatus = LD_ASR_NONE;//初始状态：没有在作ASR
 
 	while(1)
 	{if(Filck_LED==1&&Delay_500ms<=0)///是否开启危险报警灯
 		 {Delay_500ms=125;//以0.125s的间隔闪烁
 		  GPIO_WriteBit(LED3_GPIO_PORT,LED3_PIN,(BitAction)((1-GPIO_ReadOutputDataBit(LED3_GPIO_PORT,LED3_PIN))));
+			TIM3_Config(Flick_Switch=!Flick_Switch); //前照明灯当做闪光灯
 		 }
 		 if((Shake_Switch==1)&&(Get_through==0)&&(Shake_Delay<=0))
 		 {
@@ -53,6 +55,7 @@ void LD3320_main(void)
 		 else if(Get_through==1||Shake_Switch==0)
 		 {
 		  GPIO_ResetBits(GPIOA,GPIO_Pin_10);
+			 
 		 }
 		switch(nAsrStatus)
 		{
@@ -169,12 +172,13 @@ static void Board_text(uint8 Code_Val)
 		 nAsrRes=0;
 		}
 		break;
-		case CODE_JT:		//命令挂断电话  接通电话后，对方主动挂断电话，目前无法判断。。。。。。
+		case CODE_JT:		//命令挂断电话  接通电话后.
 		{	if(Call_Switch==1)
 			{Flicker_LED();
 			printf("AT+CG\r\n");
        Call_Switch=0;
 			 Get_through=0;
+			 Shake_Switch=0;
 			}	
 		 nAsrRes=0;
 		}
