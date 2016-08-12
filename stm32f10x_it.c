@@ -234,6 +234,7 @@ void USART2_IRQHandler(void)
 	  	//printf( "%c", ch );    
 	}  
 }
+
 /**
   * @brief  This function handles PPP interrupt request.
   * @param  None

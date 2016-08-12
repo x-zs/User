@@ -1,6 +1,7 @@
 #include "LD3320.h"
 #include "stm32f10x_it.h"
 #include "PWM_LED.h"
+#include "Key_Exti.h"
 /************************************************************************************
 //	nAsrStatus 用来在main主程序中表示程序运行的状态，不是LD3320芯片内部的状态寄存器
 //	LD_ASR_NONE:			表示没有在作ASR识别
@@ -39,6 +40,8 @@ void LD3320_main(void)
 {
 	LD3320_init();
   TIM3_PWM_Config(0);	
+  Delayms(100);
+	Key_Exti_Config();
 	nAsrStatus = LD_ASR_NONE;//初始状态：没有在作ASR
 
 	while(1)
@@ -50,11 +53,11 @@ void LD3320_main(void)
 		 if((Shake_Switch==1)&&(Get_through==0)&&(Shake_Delay<=0))
 		 {
 		  Shake_Delay=1000;
-		  GPIO_WriteBit(GPIOA,GPIO_Pin_10,(BitAction)(1-GPIO_ReadOutputDataBit(GPIOA,GPIO_Pin_10)));
+		  GPIO_WriteBit(GPIOA,GPIO_Pin_11,(BitAction)(1-GPIO_ReadOutputDataBit(GPIOA,GPIO_Pin_11)));
 		 }
 		 else if(Get_through==1||Shake_Switch==0)
 		 {
-		  GPIO_ResetBits(GPIOA,GPIO_Pin_10);
+		  GPIO_ResetBits(GPIOA,GPIO_Pin_11);
 			 
 		 }
 		switch(nAsrStatus)
@@ -375,12 +378,12 @@ static void LED_GPIO_cfg(void)
 		GPIO_Init(LED2_GPIO_PORT, &GPIO_InitStructure);
 		GPIO_InitStructure.GPIO_Pin = LED3_PIN;
 		GPIO_Init(LED3_GPIO_PORT, &GPIO_InitStructure);
-    GPIO_InitStructure.GPIO_Pin=GPIO_Pin_10;//初始化震动端口A10
+    GPIO_InitStructure.GPIO_Pin=GPIO_Pin_11;//初始化震动端口A11
     GPIO_Init(GPIOA,&GPIO_InitStructure);
 		LED1_OFF();
 		LED2_OFF();
     LED3_OFF();
-    GPIO_ResetBits(GPIOA,GPIO_Pin_10);//
+    GPIO_ResetBits(GPIOA,GPIO_Pin_11);//
 }
 ///相关初始化 end 
 
@@ -395,7 +398,25 @@ void EXTI15_10_IRQHandler(void)
 		EXTI_ClearITPendingBit(LD3320IRQEXITLINE);//清除LINE上的中断标志位  
 	} 
 }
-
+void EXTI9_5_IRQHandler(void)
+{
+	if(EXTI_GetITStatus(EXTI_Line8) != RESET)//voice substract
+	{
+		printf("AT+CL\r\n");
+		EXTI_ClearITPendingBit(EXTI_Line8);
+	}
+	if(EXTI_GetITStatus(EXTI_Line7) != RESET)//voice puls
+	{
+		printf("AT+CK\r\n");
+		EXTI_ClearITPendingBit(EXTI_Line7);
+	}
+	if(EXTI_GetITStatus(EXTI_Line6) != RESET)//open help function
+	{
+		printf("APT+help\r\n");
+		Filck_LED=1;
+		EXTI_ClearITPendingBit(EXTI_Line6);
+	}
+}
 static void LD3320_delay(unsigned long uldata)
 {
 	unsigned int i  =  0;
