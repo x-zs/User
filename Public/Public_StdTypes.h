@@ -63,6 +63,7 @@ typedef struct
 	BitAction (*GPIO_BitVal)(void);
 }LED_TypeDef;
 
+/*typedef struct 
 {
 	uint8_t Count;
 	SPI_TypeDef* SPIx;
@@ -70,6 +71,7 @@ typedef struct
 	uint32_t RCC_APBPeriph;
 	void (*SPIx_PeriphClockCmd)(uint32_t RCC_SPIPeriph, FunctionalState NewState);
 	void (*SPIx_GPIOInit)(void);
+}SPI_TypeStruct;*/
 
 
 #endif

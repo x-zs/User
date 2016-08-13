@@ -81,7 +81,7 @@ void LD3320_main(void)
  			//printf("APT+Magnetic: X: %d     Y: %d     Z: %d \r\n",magn[0],magn[1],magn[2]);
 			//	Delay_ms(10);
  			//printf("APT+Pressure: %.2f     Altitude:%.2f \r\n",(float)PressureVal / 100, (float)AltitudeVal / 100);
-			 printf("Altitude:%.2f \r\n",(float)AltitudeVal / 100);
+			printf("APT+Altitude:%.2f\r\n",(float)AltitudeVal / 100);
 			//Delay_ms(10);
  			//printf("APT+Temperature: %.1f \r\n", (float)TemperatureVal / 10);
 	
