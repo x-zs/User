@@ -139,11 +139,38 @@ extern uint16_t Delay_Ms;
 extern int16_t Delay_3s;
 extern int16_t Delay_500ms;
 extern int16_t Shake_Delay;
+
+
+uint8_t UART_UpdataFlag = 0;
+uint8_t IMU_SampleFlag = 0;
+uint8_t Press_SampleFlag = 0;
+
+static uint8_t Tim_48ms, Tim_32ms;
+static uint16_t	Tim_500mS;
 void SysTick_Handler(void)
-{Delay_Ms--;
+{	
+	Delay_Ms--;
 if(Delay_3s>=-1)Delay_3s--;
 if(Delay_500ms>=-1)Delay_500ms--;
 if(Shake_Delay>=-1)Shake_Delay--;
+	if(++ Tim_48ms >=48)
+	{
+		IMU_SampleFlag=1;
+		Tim_48ms = 0;
+	}
+
+	if(++ Tim_32ms >=32)
+	{
+		Press_SampleFlag=1;
+		Tim_32ms = 0;
+	}
+
+	if(++ Tim_500mS >= 1000)
+	{
+		Tim_500mS = 0;
+		UART_UpdataFlag = 1;
+	}
+	
 }
 
 /******************************************************************************/
@@ -208,7 +235,7 @@ void USART3_IRQHandler(void)
 			 else if(strstr(Rx_Buff,"APR+LED_H\r"))TIM3_Config(20);//ledÁÁ¶È¸ß
 			 else if(strstr(Rx_Buff,"APR+LED_M\r"))TIM3_Config(8);//ÖÐ
 			 else if(strstr(Rx_Buff,"APR+LED_L\r"))TIM3_Config(2);//µÍ
-       else if(strstr(Rx_Buff,"APR+Change_Finish\r"))Ch_Sw=0;//¸Ä±ä¿ÚÁîÍê³É±êÖ¾		 		 
+       else if(strstr(Rx_Buff,"APR+Change_Finish\r"))Ch_Sw=0;//¸Ä±ä¿ÚÁîÍê³É±êÖ+¾		 		 
        if(Ch_Sw==1&&Rx_Buff[0]=='A')
 			 {  
 			  for(i=0;i<17;i++)//Çå¿ÕÉÏÒ»´ÎµÄÃüÁî

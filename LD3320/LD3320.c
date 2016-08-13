@@ -2,6 +2,7 @@
 #include "stm32f10x_it.h"
 #include "PWM_LED.h"
 #include "Key_Exti.h"
+#include "System.h"
 /************************************************************************************
 //	nAsrStatus 用来在main主程序中表示程序运行的状态，不是LD3320芯片内部的状态寄存器
 //	LD_ASR_NONE:			表示没有在作ASR识别
@@ -10,6 +11,7 @@
 //	LD_ASR_FOUNDZERO:	表示一次识别流程结束后，没有识别结果
 //	LD_ASR_ERROR:			表示一次识别流程中LD3320芯片内部出现不正确的状态
 *********************************************************************************/
+void System_Init(void);
 uint8 nAsrStatus = 0;	
 uint8 nLD_Mode = LD_MODE_IDLE;//用来记录当前是在进行ASR识别还是在播放MP3
 uint8 ucRegVal;
@@ -23,6 +25,11 @@ uint8_t Call_Switch=0;
 _Bool Get_through=0;  ///当接听电话时屏蔽其他功能的口令
 _Bool Shake_Switch=0;
 _Bool Flick_Switch=0;
+int16_t TestmagnBuff[9]={0}; //校准磁力计的buff
+//extern uint8_t KeyAndJostickValue;
+extern uint8_t UART_UpdataFlag;
+extern uint8_t IMU_SampleFlag;
+extern uint8_t Press_SampleFlag;
 	#define DATE_A 20    //数组二维数值
 	#define DATE_B 17		//数组一维数值
 	//添加关键词，用户修改
@@ -39,17 +46,47 @@ _Bool Flick_Switch=0;
 void LD3320_main(void)
 {
 	LD3320_init();
+	System_Init();//陀螺仪的初始化
   TIM3_PWM_Config(0);	
-  Delayms(100);
 	Key_Exti_Config();
 	nAsrStatus = LD_ASR_NONE;//初始状态：没有在作ASR
 
 	while(1)
-	{if(Filck_LED==1&&Delay_500ms<=0)///是否开启危险报警灯
+	{		
+		if(Filck_LED==1&&Delay_500ms<=0)///是否开启危险报警灯
 		 {Delay_500ms=125;//以0.125s的间隔闪烁
 		  GPIO_WriteBit(LED3_GPIO_PORT,LED3_PIN,(BitAction)((1-GPIO_ReadOutputDataBit(LED3_GPIO_PORT,LED3_PIN))));
 			TIM3_Config(Flick_Switch=!Flick_Switch); //前照明灯当做闪光灯
 		 }
+		if(IMU_SampleFlag)
+		{
+			IMU_GetYawPitchRoll(angles);	
+			IMU_SampleFlag=0;
+		}
+		if(Press_SampleFlag)
+		{ 				
+			CalTemperatureAndPressureAndAltitude();
+			Press_SampleFlag=0;
+		}
+		if(UART_UpdataFlag)
+		{		    
+			//printf("APT+/------------------------------------/ \r\n");
+			//Delay_ms(10);
+			//printf("APT+Roll: %.2f     Pitch: %.2f     Yaw: %.2f \r\n",angles[2],angles[1],angles[0]);
+			//Delay_ms(10);
+			//printf("APT+Acceleration: X: %d     Y: %d     Z: %d \r\n",accel[0],accel[1],accel[2]);
+			//Delay_ms(10);
+			//printf("APT+Gyroscope: X: %d     Y: %d     Z: %d \r\n",gyro[0],gyro[1],gyro[2]);
+			//Delay_ms(10);
+ 			//printf("APT+Magnetic: X: %d     Y: %d     Z: %d \r\n",magn[0],magn[1],magn[2]);
+			//	Delay_ms(10);
+ 			//printf("APT+Pressure: %.2f     Altitude:%.2f \r\n",(float)PressureVal / 100, (float)AltitudeVal / 100);
+			 printf("Altitude:%.2f \r\n",(float)AltitudeVal / 100);
+			//Delay_ms(10);
+ 			//printf("APT+Temperature: %.1f \r\n", (float)TemperatureVal / 10);
+	
+			UART_UpdataFlag = 0;
+		}
 		 if((Shake_Switch==1)&&(Get_through==0)&&(Shake_Delay<=0))
 		 {
 		  Shake_Delay=1000;
@@ -83,8 +120,19 @@ void LD3320_main(void)
 			}//switch
 		//开发板测试
 			Board_text(nAsrRes );
+		
 	}// while
 }
+
+void System_Init(void)//陀螺仪初始化
+{
+  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	
+	__disable_irq();
+	I2Cx_Init();
+	IMU_Init();
+	__enable_irq();
+} 
+
 
 static uint8 LD_AsrAddFixed(void)
 {
