@@ -31,6 +31,7 @@ void USART_init(void)
 		RCC_APB1PeriphClockCmd(TEST_USART_CLS, ENABLE);
 	}
 	RCC_APB2PeriphClockCmd(TEST_USART_TXD_CLK|TEST_USART_RXD_CLK, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 	
 	/* USART GPIO config */
 	/* Configure USART Tx as alternate function push-pull */
@@ -39,9 +40,9 @@ void USART_init(void)
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(TEST_USART_TXD_GPIO_PORT, &GPIO_InitStructure);    
 	/* Configure USART Rx as input floating */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+	GPIO_InitStructure.GPIO_Pin = TEST_USART_RXD_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_Init(TEST_USART_RXD_GPIO_PORT, &GPIO_InitStructure);
 	
 	USART_InitStructure.USART_BaudRate = TEST_USART_BAUD;
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
@@ -52,7 +53,7 @@ void USART_init(void)
 	USART_Init(TEST_USART, &USART_InitStructure);
 	
 	USART_ITConfig(TEST_USART, USART_IT_RXNE, ENABLE);
-	
+	GPIO_PinRemapConfig(GPIO_FullRemap_USART3,ENABLE);
 	USART_Cmd(TEST_USART, ENABLE);
 	
 	NVIC_Configuration();

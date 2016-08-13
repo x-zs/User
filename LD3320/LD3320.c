@@ -347,7 +347,6 @@ static void LD3320_SPI_cfg(void)
 	GPIO_Init(LD3320WR_GPIO_PORT, &GPIO_InitStructure);
 	
 	LD_CS_H();
-	
 	SPI_Cmd(LD3320SPI, DISABLE);
 
 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;   	//È«Ë«¹¤

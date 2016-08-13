@@ -174,13 +174,13 @@ extern uint8_t Call_Switch;
 extern _Bool Get_through;
 extern _Bool Shake_Switch;
 uint8_t Ch_Sw=0;
-void USART2_IRQHandler(void)
+void USART3_IRQHandler(void)
 { 
 	uint8_t ch;
 	uint16_t i=0;
-	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
-	{ 	
-			ch = USART_ReceiveData(USART2);
+	if(USART_GetITStatus(USART3, USART_IT_RXNE) != RESET)
+	{  	
+			ch = USART_ReceiveData(USART3);
 		 if(ch!='\n')
 		 {Rx_Buff[Rx_Length++]=ch;
 		 }
