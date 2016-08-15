@@ -27,6 +27,7 @@
 #include "stm32f10x_it.h"
 #include <stdio.h>
 #include "PWM_LED.h"
+#include "LD3320_config.h"
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
   */
@@ -135,23 +136,30 @@ void PendSV_Handler(void)
   * @param  None
   * @retval None
   */
+//extern uint32_t TimingDelay;
+uint8_t x=0,y=0;
+extern uint8_t USART2_RxBuff[100];
+
+uint8_t RXOVER = 0;
+uint8_t RXCUNT = 0;
+
 extern uint16_t Delay_Ms;
 extern int16_t Delay_3s;
-extern int16_t Delay_500ms;
+extern int16_t Delay_125ms;
 extern int16_t Shake_Delay;
 
-
+extern uint32_t Delay_30s;
 uint8_t UART_UpdataFlag = 0;
 uint8_t IMU_SampleFlag = 0;
 uint8_t Press_SampleFlag = 0;
-
+uint8_t Ch_Sw=0;//改变口令开始标志位
 static uint8_t Tim_48ms, Tim_32ms;
 static uint16_t	Tim_500mS;
 void SysTick_Handler(void)
-{	
+{	Delay_30s++;
 	Delay_Ms--;
 if(Delay_3s>=-1)Delay_3s--;
-if(Delay_500ms>=-1)Delay_500ms--;
+if(Delay_125ms>=-1)Delay_125ms--;
 if(Shake_Delay>=-1)Shake_Delay--;
 	if(++ Tim_48ms >=48)
 	{
@@ -165,7 +173,7 @@ if(Shake_Delay>=-1)Shake_Delay--;
 		Tim_32ms = 0;
 	}
 
-	if(++ Tim_500mS >= 1000)
+	if(Ch_Sw==0&& ++ Tim_500mS >= 1000)
 	{
 		Tim_500mS = 0;
 		UART_UpdataFlag = 1;
@@ -181,18 +189,7 @@ if(Shake_Delay>=-1)Shake_Delay--;
 /******************************************************************************/
 extern uint8_t Rx_Buff[10];
 extern uint8_t Rx_Length;
-extern uint8_t Rx_Over;
-void USART1_IRQHandler(void)
-{
-	uint8_t ch;
-	
-	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
-	{ 	
-			ch = USART_ReceiveData(USART1);
-		
-	  	printf( "%c", ch );    
-	} 
-}	
+//extern uint8_t Rx_Over;	
 #define DATE_A 10    //数组二维数值
 #define DATE_B 17
 extern	uint8_t  sRecog[DATE_A][DATE_B];
@@ -200,7 +197,7 @@ extern uint8_t help_switch;
 extern uint8_t Call_Switch;
 extern _Bool Get_through;
 extern _Bool Shake_Switch;
-uint8_t Ch_Sw=0;
+
 void USART3_IRQHandler(void)
 { 
 	uint8_t ch;
@@ -262,6 +259,86 @@ void USART3_IRQHandler(void)
 	}  
 }
 
+
+
+void USART1_IRQHandler(void)
+{
+	//uint8_t temp;
+	
+		if(USART_GetITStatus(USART1,USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(USART1,USART_IT_RXNE);		
+		
+			/*temp = USART_ReceiveData(USART1);
+		if(temp=='\n'){
+			USART1_RXBUF[RXCUNT1]=temp;
+			++RXCUNT1;
+			USART1_RXBUF[RXCUNT1]='\0';
+			RXCUNT1 = 0;
+			RXOVER1 = 1;  //接收完成标志位置位
+			USART_ITConfig(USART1,USART_IT_RXNE,DISABLE);
+		}
+		else{
+			
+				USART1_RXBUF[RXCUNT1] = temp;
+			  ++RXCUNT1;
+					
+		}*/
+			
+	 }
+  
+}
+void USART2_IRQHandler(void) 
+{
+	uint8_t temp;
+	
+	uint8_t gps[6]="$GPRMC";
+	
+	if(Delay_30s<=30000)
+	{
+		if(USART_GetITStatus(USART2,USART_IT_RXNE) != RESET){
+		USART_ClearITPendingBit(USART2,USART_IT_RXNE);		
+		temp = USART_ReceiveData(USART2);
+		if(RXCUNT >100){
+			++RXCUNT;
+			USART2_RxBuff[RXCUNT]='\0';
+			RXCUNT = 0;
+			RXOVER = 1;  //接收完成标志位置位
+			USART_ITConfig(USART2,USART_IT_RXNE,DISABLE);
+		}
+		else {
+			if(temp==gps[x]&&x<6)                //此下几行判断语句是为了从串口数据缓冲区中筛选出$GPRMC开头的语句
+			{
+				USART2_RxBuff[RXCUNT] = temp;
+			  ++RXCUNT;	
+        ++x;
+      }
+      else if(x==6)
+			{
+        USART2_RxBuff[RXCUNT] = temp;
+        ++RXCUNT;
+			}		
+      else
+			{
+				
+				if(y<x)
+				{
+					USART2_RxBuff[y]=0;
+				  y++;
+				}
+				else 
+				{
+					y=0;
+					x=0;
+					Delay_30s=0;
+					RXCUNT=0;
+				}
+					
+			}
+         					
+		}
+	 }
+  }
+}
 /**
   * @brief  This function handles PPP interrupt request.
   * @param  None

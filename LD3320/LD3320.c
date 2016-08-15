@@ -3,6 +3,7 @@
 #include "PWM_LED.h"
 #include "Key_Exti.h"
 #include "System.h"
+#include "GPS_Data.h"
 /************************************************************************************
 //	nAsrStatus 用来在main主程序中表示程序运行的状态，不是LD3320芯片内部的状态寄存器
 //	LD_ASR_NONE:			表示没有在作ASR识别
@@ -12,6 +13,9 @@
 //	LD_ASR_ERROR:			表示一次识别流程中LD3320芯片内部出现不正确的状态
 *********************************************************************************/
 void System_Init(void);
+void Delay_1ms(uint16_t Timing);
+void Send(uint8_t *str);
+uint16_t Delay_Ms=0;
 uint8 nAsrStatus = 0;	
 uint8 nLD_Mode = LD_MODE_IDLE;//用来记录当前是在进行ASR识别还是在播放MP3
 uint8 ucRegVal;
@@ -19,14 +23,25 @@ uint8 nAsrRes=0;
 uint8_t Filck_LED=0;
 int16_t Delay_3s=1;
 uint8_t help_switch=1;
-int16_t Delay_500ms=0;
+int16_t Delay_125ms=0;
 int16_t Shake_Delay=0;
 uint8_t Call_Switch=0;
 _Bool Get_through=0;  ///当接听电话时屏蔽其他功能的口令
 _Bool Shake_Switch=0;
 _Bool Flick_Switch=0;
-int16_t TestmagnBuff[9]={0}; //校准磁力计的buff
-//extern uint8_t KeyAndJostickValue;
+/////////////////
+  uint8_t str1[100]="AT+CIPSTART=\"TCP\",\"150p1221e9.iok.la\",47471\r\n";  //连接服务器
+	uint8_t str2[30]="AT+CIPSEND=24\r\n";            //向服务器发送20位经纬度数据
+	uint8_t str4[30]="AT+CSCS=\"GB2312\"\r\n";      //发中文短信第一步
+	uint8_t str5[30]="AT+CMGF=1\r\n";               //发中文短信第二步
+	uint8_t str6[30]="AT+CMGS=\"17862347665\"\r\n"; //发中文短信第三步
+	uint8_t str7[50]="您的背包已成功定位！\r"; //发中文短信最后一步
+extern uint8_t RXOVER;
+uint32_t Delay_30s=0;//定时30秒
+uint8_t USART2_RxBuff[100];
+uint8_t Jingweidu[50],weidu[20],jingdu[20];
+extern uint8_t x,y;
+////////////////////////
 extern uint8_t UART_UpdataFlag;
 extern uint8_t IMU_SampleFlag;
 extern uint8_t Press_SampleFlag;
@@ -44,17 +59,51 @@ extern uint8_t Press_SampleFlag;
 																	};	
 ///用户修改
 void LD3320_main(void)
-{
+{	uint8_t i=0,flag=0;
+
+	
 	LD3320_init();
 	System_Init();//陀螺仪的初始化
   TIM3_PWM_Config(0);	
 	Key_Exti_Config();
 	nAsrStatus = LD_ASR_NONE;//初始状态：没有在作ASR
-
+	Send(str1);
+	LED1_ON();
+	LED2_ON();
+	Delay_1ms(5000);
+	Send(str4);
+	Delay_1ms(500);
+	Send(str5);
+	Delay_1ms(500);
 	while(1)
-	{		
-		if(Filck_LED==1&&Delay_500ms<=0)///是否开启危险报警灯
-		 {Delay_500ms=125;//以0.125s的间隔闪烁
+	{	if(RXOVER == 1&& UART_UpdataFlag){
+				gpsdata(USART2_RxBuff,Jingweidu);
+				GPS_Dispose(Jingweidu,weidu,jingdu);
+				if(Jingweidu[3])
+				{
+					Send(str2);
+					Send(Jingweidu);
+					if(flag<=1)
+						flag++;
+					if(flag==1)
+					{//Send(str6);
+					//Delay_1ms(500);
+					//Send(str7);
+						 }
+				}
+			for(i=0;i<100;i++){
+				USART2_RxBuff[i] = 0;  //清空接收区
+			}
+			RXOVER = 0;
+			Delay_30s=0;
+			x=0;
+			y=0;
+			USART_ITConfig(USART2,USART_IT_RXNE,ENABLE);
+			}
+				
+				
+		if(Filck_LED==1&&Delay_125ms<=0)///是否开启危险报警灯
+		 {Delay_125ms=125;//以0.125s的间隔闪烁
 		  GPIO_WriteBit(LED3_GPIO_PORT,LED3_PIN,(BitAction)((1-GPIO_ReadOutputDataBit(LED3_GPIO_PORT,LED3_PIN))));
 			TIM3_Config(Flick_Switch=!Flick_Switch); //前照明灯当做闪光灯
 		 }
@@ -71,7 +120,7 @@ void LD3320_main(void)
 		if(UART_UpdataFlag)
 		{		    
 			//printf("APT+/------------------------------------/ \r\n");
-			//Delay_ms(10);
+			//Delay_1ms(10);
 			//printf("APT+Roll: %.2f     Pitch: %.2f     Yaw: %.2f \r\n",angles[2],angles[1],angles[0]);
 			//Delay_ms(10);
 			//printf("APT+Acceleration: X: %d     Y: %d     Z: %d \r\n",accel[0],accel[1],accel[2]);
@@ -81,7 +130,7 @@ void LD3320_main(void)
  			//printf("APT+Magnetic: X: %d     Y: %d     Z: %d \r\n",magn[0],magn[1],magn[2]);
 			//	Delay_ms(10);
  			//printf("APT+Pressure: %.2f     Altitude:%.2f \r\n",(float)PressureVal / 100, (float)AltitudeVal / 100);
-			printf("APT+Altitude:%.2f\r\n",(float)AltitudeVal / 100);
+			//printf("APT+Altitude:%.2f\r\n",(float)AltitudeVal / 100);
 			//Delay_ms(10);
  			//printf("APT+Temperature: %.1f \r\n", (float)TemperatureVal / 10);
 	
@@ -124,16 +173,31 @@ void LD3320_main(void)
 	}// while
 }
 
+
 void System_Init(void)//陀螺仪初始化
 {
-  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	
 	__disable_irq();
 	I2Cx_Init();
 	IMU_Init();
 	__enable_irq();
 } 
+void Delay_1ms(uint16_t Timing)
+{
+Delay_Ms=Timing;
+	while(Delay_Ms);
 
-
+}
+void Send(uint8_t *str)     //发送字符串函数
+{
+	uint32_t i=0;
+	while(str[i])
+	{
+		USART_SendData(USART1,str[i]);
+		i++;
+		Delay_1ms(10);
+	}
+	
+}
 static uint8 LD_AsrAddFixed(void)
 {
 	uint8 k, flag;
@@ -223,10 +287,10 @@ static void Board_text(uint8 Code_Val)
 		 nAsrRes=0;
 		}
 		break;
-		case CODE_JT:		//命令挂断电话  接通电话后.
+		case CODE_JT:		//命令挂断电话
 		{	if(Call_Switch==1)
 			{Flicker_LED();
-			printf("AT+CG\r\n");
+			printf("AT+CF\r\n");
        Call_Switch=0;
 			 Get_through=0;
 			 Shake_Switch=0;
@@ -313,11 +377,6 @@ static void Flicker_LED(void)
 	Delayms(0XFFF);
 }
 
-static void Off_LED(void)
-{
-	LED1_OFF();
-	LED2_OFF();
-}
 ///用户修改 end
 
 ///相关初始化
