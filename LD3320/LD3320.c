@@ -59,7 +59,7 @@ extern uint8_t Press_SampleFlag;
 																	};	
 ///用户修改
 void LD3320_main(void)
-{	uint8_t i=0,flag=0;
+{	uint8_t i=0;
 
 	
 	LD3320_init();
@@ -67,29 +67,22 @@ void LD3320_main(void)
   TIM3_PWM_Config(0);	
 	Key_Exti_Config();
 	nAsrStatus = LD_ASR_NONE;//初始状态：没有在作ASR
-	Send(str1);
+	//Send(str1);
 	LED1_ON();
 	LED2_ON();
-	Delay_1ms(5000);
-	Send(str4);
-	Delay_1ms(500);
-	Send(str5);
-	Delay_1ms(500);
+	//Delay_1ms(5000);
+	//Send(str4);
+	//Delay_1ms(500);
+	//Send(str5);
+	//Delay_1ms(500);
 	while(1)
 	{	if(RXOVER == 1&& UART_UpdataFlag){
 				gpsdata(USART2_RxBuff,Jingweidu);
 				GPS_Dispose(Jingweidu,weidu,jingdu);
 				if(Jingweidu[3])
 				{
-					Send(str2);
+					//Send(str2);
 					Send(Jingweidu);
-					if(flag<=1)
-						flag++;
-					if(flag==1)
-					{//Send(str6);
-					//Delay_1ms(500);
-					//Send(str7);
-						 }
 				}
 			for(i=0;i<100;i++){
 				USART2_RxBuff[i] = 0;  //清空接收区
@@ -103,10 +96,10 @@ void LD3320_main(void)
 				
 				
 		if(Filck_LED==1&&Delay_125ms<=0)///是否开启危险报警灯
-		 {Delay_125ms=125;//以0.125s的间隔闪烁
+		 {
 		  GPIO_WriteBit(LED3_GPIO_PORT,LED3_PIN,(BitAction)((1-GPIO_ReadOutputDataBit(LED3_GPIO_PORT,LED3_PIN))));
 			TIM3_Config(Flick_Switch=!Flick_Switch); //前照明灯当做闪光灯
-		 }
+		 } 
 		if(IMU_SampleFlag)
 		{
 			IMU_GetYawPitchRoll(angles);	
@@ -130,7 +123,7 @@ void LD3320_main(void)
  			//printf("APT+Magnetic: X: %d     Y: %d     Z: %d \r\n",magn[0],magn[1],magn[2]);
 			//	Delay_ms(10);
  			//printf("APT+Pressure: %.2f     Altitude:%.2f \r\n",(float)PressureVal / 100, (float)AltitudeVal / 100);
-			//printf("APT+Altitude:%.2f\r\n",(float)AltitudeVal / 100);
+			printf("APT+Altitude:%.2f\r\n",(float)AltitudeVal / 100);
 			//Delay_ms(10);
  			//printf("APT+Temperature: %.1f \r\n", (float)TemperatureVal / 10);
 	
@@ -246,7 +239,7 @@ static uint8 LD_AsrAddFixed(void)
 
 static void Board_text(uint8 Code_Val)
 {if(Delay_3s<0)
-	{LED1_OFF();	
+	{LED2_OFF();	
 		switch(Code_Val)  //对结果执行相关操作
 	  {
 		case CODE_LSD:  //命令“流水灯”
@@ -309,7 +302,7 @@ static void Board_text(uint8 Code_Val)
 	 }	
  }
 	else
-	{LED1_ON();
+	{LED2_ON();
 	switch(Code_Val)
 	 {case CODE_CALL1:
 		{printf("APT+CALL_1\r\n");		
