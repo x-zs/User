@@ -197,13 +197,13 @@ extern uint8_t help_switch;
 extern uint8_t Call_Switch;
 extern _Bool Get_through;
 extern _Bool Shake_Switch;
-
+extern _Bool break_flag; //蓝牙断开标志 
 void USART3_IRQHandler(void)
 { 
 	uint8_t ch;
 	uint16_t i=0;
 	if(USART_GetITStatus(USART3, USART_IT_RXNE) != RESET)
-	{  	
+	{  USART_ClearITPendingBit(USART3,USART_IT_RXNE);	 	
 			ch = USART_ReceiveData(USART3);
 		 if(ch!='\n')
 		 {Rx_Buff[Rx_Length++]=ch;
@@ -223,8 +223,14 @@ void USART3_IRQHandler(void)
 				Shake_Switch=0;
 			 }//如果对方主动挂断电话.程序主动发送一个call_end 
 			 if(strstr(Rx_Buff,"II\r"))
-			 {for(i=5000;i>0;i--);
+			 {	break_flag=0;
+				 GPIO_ResetBits(GPIOA,GPIO_Pin_11);//关闭马达振子
+				 for(i=5000;i>0;i--);
 			   printf("APT+SPP8888\r\n");
+			 }
+			 else if(strstr(Rx_Buff,"IA\r"))  //如果蓝牙断开
+			 {
+			 break_flag=1;
 			 }
 			 if(strstr(Rx_Buff,"APR+help_off\r"))help_switch=0;		//关求救功能	  			 
 			 else if(strstr(Rx_Buff,"APR+help_on\r"))help_switch=1;	//开求救功能		  
@@ -303,7 +309,7 @@ void USART2_IRQHandler(void)
 			USART2_RxBuff[RXCUNT]='\0';
 			RXCUNT = 0;
 			RXOVER = 1;  //接收完成标志位置位
-			USART_ITConfig(USART2,USART_IT_RXNE,DISABLE);
+		//	USART_ITConfig(USART2,USART_IT_RXNE,DISABLE);
 		}
 		else {
 			if(temp==gps[x]&&x<6)                //此下几行判断语句是为了从串口数据缓冲区中筛选出$GPRMC开头的语句

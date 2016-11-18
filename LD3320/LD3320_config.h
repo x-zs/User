@@ -15,25 +15,19 @@
 #define CODE_CALL5 11
 
 ///LED引脚相关定义
-#define LED1_PIN							GPIO_Pin_13
-#define LED1_GPIO_PORT				GPIOD
-#define LED1_GPIO_CLK					RCC_APB2Periph_GPIOD
+#define LED1_PIN							GPIO_Pin_14
+#define LED1_GPIO_PORT				GPIOG
+#define LED1_GPIO_CLK					RCC_APB2Periph_GPIOG
 
-#define LED2_PIN							GPIO_Pin_14
-#define LED2_GPIO_PORT				GPIOG
-#define LED2_GPIO_CLK					RCC_APB2Periph_GPIOG
+#define LED2_PIN							GPIO_Pin_12
+#define LED2_GPIO_PORT				GPIOD
+#define LED2_GPIO_CLK					RCC_APB2Periph_GPIOD
 
-#define LED3_PIN							GPIO_Pin_12
-#define LED3_GPIO_PORT				GPIOD
-#define LED3_GPIO_CLK					RCC_APB2Periph_GPIOD
+#define  LED1_ON()							GPIO_SetBits(GPIOG,GPIO_Pin_14)
+#define LED2_ON()								GPIO_SetBits(GPIOD,GPIO_Pin_12)					
 
-#define  LED1_ON()								GPIO_SetBits(GPIOD,GPIO_Pin_13)
-#define LED2_ON()								GPIO_SetBits(GPIOG,GPIO_Pin_14)
-#define  LED3_ON()								GPIO_SetBits(GPIOD,GPIO_Pin_12)
-
-#define LED1_OFF()							GPIO_ResetBits(GPIOD,GPIO_Pin_13)
-#define LED2_OFF()							GPIO_ResetBits(GPIOG,GPIO_Pin_14)
-#define LED3_OFF()							GPIO_ResetBits(GPIOD,GPIO_Pin_12)
+#define LED1_OFF()							GPIO_ResetBits(GPIOG,GPIO_Pin_14)
+#define LED2_OFF()							GPIO_ResetBits(GPIOD,GPIO_Pin_12)
 
 
 ///LD3320引脚相关定义

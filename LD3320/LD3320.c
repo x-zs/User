@@ -27,8 +27,9 @@ int16_t Delay_125ms=0;
 int16_t Shake_Delay=0;
 uint8_t Call_Switch=0;
 _Bool Get_through=0;  ///当接听电话时屏蔽其他功能的口令
-_Bool Shake_Switch=0;
+_Bool Shake_Switch=0;  
 _Bool Flick_Switch=0;
+_Bool break_flag=0;
 /////////////////
   uint8_t str1[100]="AT+CIPSTART=\"TCP\",\"150p1221e9.iok.la\",47471\r\n";  //连接服务器
 	uint8_t str2[30]="AT+CIPSEND=24\r\n";            //向服务器发送20位经纬度数据
@@ -50,10 +51,10 @@ extern uint8_t Press_SampleFlag;
 	//添加关键词，用户修改
 	uint8_t  sRecog[DATE_A][DATE_B] = {
 	 			"liu shui deng",\
-				"zai jian bai bai",\
+				"gua duan dian hua",\
 				"jie",\
 				"chong bo dian hua",\
-		    "gua duan dian hua",\
+		    "bu jie",\
 				"da dian hua" 
 		
 																	};	
@@ -69,37 +70,40 @@ void LD3320_main(void)
 	nAsrStatus = LD_ASR_NONE;//初始状态：没有在作ASR
 	//Send(str1);
 	LED1_ON();
-	LED2_ON();
 	//Delay_1ms(5000);
 	//Send(str4);
 	//Delay_1ms(500);
 	//Send(str5);
 	//Delay_1ms(500);
 	while(1)
-	{	if(RXOVER == 1&& UART_UpdataFlag){
-				gpsdata(USART2_RxBuff,Jingweidu);
-				GPS_Dispose(Jingweidu,weidu,jingdu);
-				if(Jingweidu[3])
-				{
-					//Send(str2);
-					Send(Jingweidu);
-				}
-			for(i=0;i<100;i++){
-				USART2_RxBuff[i] = 0;  //清空接收区
+	{	if(RXOVER == 1&& UART_UpdataFlag)
+		{
+			gpsdata(USART2_RxBuff,Jingweidu);
+			GPS_Dispose(Jingweidu,weidu,jingdu);
+			if(Jingweidu[3])
+			{
+				//Send(str2);
+				Send(Jingweidu);
+			}
+		 for(i=0;i<100;i++){
+			USART2_RxBuff[i] = 0;  //清空接收区
 			}
 			RXOVER = 0;
 			Delay_30s=0;
 			x=0;
 			y=0;
-			USART_ITConfig(USART2,USART_IT_RXNE,ENABLE);
-			}
-				
-				
+			//USART_ITConfig(USART2,USART_IT_RXNE,ENABLE);
+		}				
 		if(Filck_LED==1&&Delay_125ms<=0)///是否开启危险报警灯
-		 {
-		  GPIO_WriteBit(LED3_GPIO_PORT,LED3_PIN,(BitAction)((1-GPIO_ReadOutputDataBit(LED3_GPIO_PORT,LED3_PIN))));
+		 {Delay_125ms=125;
+		  GPIO_WriteBit(LED2_GPIO_PORT,LED2_PIN,(BitAction)((1-GPIO_ReadOutputDataBit(LED2_GPIO_PORT,LED2_PIN))));
 			TIM3_Config(Flick_Switch=!Flick_Switch); //前照明灯当做闪光灯
-		 } 
+		 }
+		 if((Shake_Switch==1||break_flag==1)&&(Get_through==0)&&(Shake_Delay<=0))
+		 {
+		  Shake_Delay=1000;
+		  GPIO_WriteBit(GPIOA,GPIO_Pin_11,(BitAction)(1-GPIO_ReadOutputDataBit(GPIOA,GPIO_Pin_11)));
+		 }	 
 		if(IMU_SampleFlag)
 		{
 			IMU_GetYawPitchRoll(angles);	
@@ -123,22 +127,14 @@ void LD3320_main(void)
  			//printf("APT+Magnetic: X: %d     Y: %d     Z: %d \r\n",magn[0],magn[1],magn[2]);
 			//	Delay_ms(10);
  			//printf("APT+Pressure: %.2f     Altitude:%.2f \r\n",(float)PressureVal / 100, (float)AltitudeVal / 100);
+			if((float)AltitudeVal/100<300.00)
 			printf("APT+Altitude:%.2f\r\n",(float)AltitudeVal / 100);
 			//Delay_ms(10);
  			//printf("APT+Temperature: %.1f \r\n", (float)TemperatureVal / 10);
 	
 			UART_UpdataFlag = 0;
 		}
-		 if((Shake_Switch==1)&&(Get_through==0)&&(Shake_Delay<=0))
-		 {
-		  Shake_Delay=1000;
-		  GPIO_WriteBit(GPIOA,GPIO_Pin_11,(BitAction)(1-GPIO_ReadOutputDataBit(GPIOA,GPIO_Pin_11)));
-		 }
-		 else if(Get_through==1||Shake_Switch==0)
-		 {
-		  GPIO_ResetBits(GPIOA,GPIO_Pin_11);
-			 
-		 }
+
 		switch(nAsrStatus)
 		{
 			case LD_ASR_RUNING:
@@ -161,9 +157,122 @@ void LD3320_main(void)
 					break;
 			}//switch
 		//开发板测试
-			Board_text(nAsrRes );
+			Board_text(nAsrRes);
 		
 	}// while
+}
+
+
+static void Board_text(uint8 Code_Val)
+{if(Delay_3s<0)
+	{LED1_OFF();	
+		switch(Code_Val)  //对结果执行相关操作
+	  {
+		case CODE_LSD:  //命令“流水灯”
+		{	
+		 if(help_switch==1)
+		 { printf("APT+help\r\n");
+			 Glide_LED();
+		  Filck_LED=1; 
+		 }
+		 nAsrRes=0;
+		}
+		break;
+		case CODE_SS:	  //挂
+		{if(Call_Switch==1)
+			{
+				printf("AT+CG\r\n");	
+				Flicker_LED();
+       Call_Switch=0;	
+       Get_through=0;
+			}
+			nAsrRes=0;
+		}
+		break;
+		case CODE_AJCF:	//命令接
+		{if(Call_Switch==1&&Get_through==0)
+			{	printf("AT+CE\r\n");
+				Flicker_LED();
+				Get_through=1;
+			  Shake_Switch=0;				
+				GPIO_ResetBits(GPIOA,GPIO_Pin_11);//关闭马达振子
+		  }
+		nAsrRes=0;
+		}
+		break;
+		case CODE_QM:		//命令重播电话
+		{if(Call_Switch==0)
+			{	printf("AT+CH\r\n");
+				Flicker_LED();
+			}
+		 nAsrRes=0;
+		}
+		break;
+		case CODE_JT:		//命令拒接
+		{	//if(Call_Switch==1)
+			{	printf("AT+CF\r\n");
+				Flicker_LED();
+       Call_Switch=0;
+			 Get_through=0;
+			 Shake_Switch=0;
+			GPIO_ResetBits(GPIOA,GPIO_Pin_11);//关闭马达振子
+			}	
+		 nAsrRes=0;
+		}
+		break;
+		case CODE_CALL:  //命令打电话
+		{if(Call_Switch==0)
+		  {Delay_3s=5000;
+		   nAsrRes=0;
+			}
+		}
+		break;
+		default :break;
+	 }	
+ }
+	else
+	{LED1_ON();
+	switch(Code_Val)
+	 {case CODE_CALL1:
+		{printf("APT+CALL_1\r\n");
+     Delay_3s=-1;			
+			Flicker_LED();
+		  nAsrRes=0;
+		}
+		break;
+   case CODE_CALL2:
+	   {printf("APT+CALL_2\r\n");
+      Delay_3s=-1;				 
+			Flicker_LED();
+		  nAsrRes=0;
+	  }		 
+		break;
+	 case CODE_CALL3:
+		 {printf("APT+CALL_3\r\n");		
+			Flicker_LED();
+     Delay_3s=-1;	
+		  nAsrRes=0;
+	   }
+		 break;
+	 case CODE_CALL4:
+		 {printf("APT+CALL_4\r\n");
+      Delay_3s=-1;				 
+			Flicker_LED();
+		  nAsrRes=0;
+	   }
+		 break;
+	 case CODE_CALL5:
+		 {printf("APT+CALL_5\r\n");
+      Delay_3s=-1;				 
+			Flicker_LED();
+		  nAsrRes=0;
+	   }
+		 break;
+	  default:
+			nAsrRes=0;
+		break;	
+	 }
+	}
 }
 
 
@@ -237,110 +346,6 @@ static uint8 LD_AsrAddFixed(void)
 	return flag;
 }
 
-static void Board_text(uint8 Code_Val)
-{if(Delay_3s<0)
-	{LED2_OFF();	
-		switch(Code_Val)  //对结果执行相关操作
-	  {
-		case CODE_LSD:  //命令“流水灯”
-		{	
-		 if(help_switch==1)
-		 {
-			 Glide_LED();
-			printf("APT+help\r\n");
-		  Filck_LED=1; 
-		 }
-		 nAsrRes=0;
-		}
-		break;
-		case CODE_SS:	  //再见拜拜
-		{if(Call_Switch==1)
-			{Flicker_LED();
-		   printf("AT+CG\r\n");	
-       Call_Switch=0;	
-       Get_through=0;
-			Shake_Switch=0;				
-			}
-			nAsrRes=0;
-		}
-		break;
-		case CODE_AJCF:	//命令接
-		{if(Call_Switch==1&&Get_through==0)
-			{Flicker_LED();
-		   printf("AT+CE\r\n");
-				Get_through=1;
-		  }
-		nAsrRes=0;
-		}
-		break;
-		case CODE_QM:		//命令重播电话
-		{if(Call_Switch==0)
-			{Flicker_LED();
-		   printf("AT+CH\r\n");}
-		 nAsrRes=0;
-		}
-		break;
-		case CODE_JT:		//命令挂断电话
-		{	if(Call_Switch==1)
-			{Flicker_LED();
-			printf("AT+CF\r\n");
-       Call_Switch=0;
-			 Get_through=0;
-			 Shake_Switch=0;
-			}	
-		 nAsrRes=0;
-		}
-		break;
-		case CODE_CALL:  //命令打电话
-		{if(Call_Switch==0)
-		  {Delay_3s=5000;
-		   nAsrRes=0;
-			}
-		}
-		break;
-		default :break;
-	 }	
- }
-	else
-	{LED2_ON();
-	switch(Code_Val)
-	 {case CODE_CALL1:
-		{printf("APT+CALL_1\r\n");		
-			Flicker_LED();
-		  nAsrRes=0;
-		}
-		break;
-   case CODE_CALL2:
-	   {printf("APT+CALL_2\r\n");		
-			Flicker_LED();
-		  nAsrRes=0;
-	  }		 
-		break;
-	 case CODE_CALL3:
-		 {printf("APT+CALL_3\r\n");		
-			Flicker_LED();
-		  nAsrRes=0;
-	   }
-		 break;
-	 case CODE_CALL4:
-		 {printf("APT+CALL_4\r\n");		
-			Flicker_LED();
-		  nAsrRes=0;
-	   }
-		 break;
-	 case CODE_CALL5:
-		 {printf("APT+CALL_5\r\n");		
-			Flicker_LED();
-		  nAsrRes=0;
-	   }
-		 break;
-	  default:
-			nAsrRes=0;
-		break;	
-	 }
-	}
-}
-
 static void Delayms(uint16 i)
 {
 	unsigned char a,b;
@@ -352,22 +357,16 @@ static void Delayms(uint16 i)
 static void Glide_LED(void)
 {
 	LED1_ON();
-	LED2_OFF();
 	Delayms(0xfff);
-	LED2_ON();
 	LED1_OFF();
-	Delayms(0xfff);
-	LED2_OFF();
+
 }
 
 static void Flicker_LED(void)
 {
 	LED1_ON();
-	LED2_ON();
 	Delayms(0XFFF);
 	LED1_OFF();
-	LED2_OFF();
-	Delayms(0XFFF);
 }
 
 ///用户修改 end
@@ -475,13 +474,11 @@ static void LED_GPIO_cfg(void)
 		GPIO_Init(LED1_GPIO_PORT, &GPIO_InitStructure);
 		GPIO_InitStructure.GPIO_Pin = LED2_PIN;
 		GPIO_Init(LED2_GPIO_PORT, &GPIO_InitStructure);
-		GPIO_InitStructure.GPIO_Pin = LED3_PIN;
-		GPIO_Init(LED3_GPIO_PORT, &GPIO_InitStructure);
+		
     GPIO_InitStructure.GPIO_Pin=GPIO_Pin_11;//初始化震动端口A11
     GPIO_Init(GPIOA,&GPIO_InitStructure);
 		LED1_OFF();
 		LED2_OFF();
-    LED3_OFF();
     GPIO_ResetBits(GPIOA,GPIO_Pin_11);//
 }
 ///相关初始化 end 
@@ -510,9 +507,16 @@ void EXTI9_5_IRQHandler(void)
 		EXTI_ClearITPendingBit(EXTI_Line7);
 	}
 	if(EXTI_GetITStatus(EXTI_Line6) != RESET)//open help function
-	{
-		printf("APT+help\r\n");
-		Filck_LED=1;
+	{ Filck_LED=!Filck_LED;
+		if(Filck_LED==1)
+		{printf("APT+help\r\n");
+	 	 Filck_LED=1;
+		}
+		else 
+		{
+			LED2_OFF();
+			TIM3_Config(0); //前照明灯当做闪光灯
+		}
 		EXTI_ClearITPendingBit(EXTI_Line6);
 	}
 }
